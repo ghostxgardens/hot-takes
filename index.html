@@ -162,6 +162,16 @@ tr.flash th,tr.flash td{background:var(--sel)!important}
 .needbtn{min-height:40px;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;color:var(--ink);max-width:100%}
 .needbtn:hover{border-color:var(--ink)}
 .needbtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;line-height:1.45}
+.steps li::marker{font-weight:700;color:var(--muted)}
+.devicetag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--r-bg);color:var(--r)}
+details.others{border:1px solid var(--line);border-radius:10px;padding:0 14px}
+details.others summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+details.others[open]{padding-bottom:14px}
+details.others .guide{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.linkrow{display:flex;gap:8px;flex-wrap:wrap}
+.linkrow input{flex:1 1 260px;min-width:0;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:10px 12px;min-height:44px;font-family:var(--mono);font-size:14px;color:var(--ink)}
+.callout{background:var(--sel);border-radius:10px;padding:10px 14px;font-size:14px}
 .tagopen,.tagnew{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;flex:none}
 .tagopen{background:var(--k-bg);color:var(--k)} .tagnew{background:var(--sunk);color:var(--muted)}
 .alldone{padding:14px 16px;border-top:1px solid var(--line);color:var(--g);font-weight:600}
@@ -425,6 +435,7 @@ function header(s){
   return '<header class="top"><div class="brand"><span class="dot" aria-hidden="true"></span><b>Hot Takes</b></div>' + nav +
     '<div class="right"><span class="status" id="status">' + esc(statusText) + '</span>' + backupChip() +
     '<button class="btn" id="undoBtn" data-act="undo"' + (undoStack.length ? "" : " disabled") + '>Undo</button>' +
+    (isInstalled() ? '' : '<button class="btn" data-act="install">Install</button>') +
     '<button class="btn" data-act="songs">Songs</button></div></header>';
 }
 
@@ -676,7 +687,8 @@ function fallbackCopy(text){
 function emptyState(){
   return '<section class="panel empty"><strong>No songs yet</strong>' +
     '<p>Each song gets its own form and its own part tabs. New songs start with Drums, Bass, Guitar, Piano and Vocals. Rename, add or delete any of them.</p>' +
-    '<div class="row" style="justify-content:center"><button class="btn primary" data-act="newSong">+ New song</button><button class="btn" data-act="example">Load an example</button><button class="btn" data-act="import">Import a backup</button></div></section>';
+    '<div class="row" style="justify-content:center"><button class="btn primary" data-act="newSong">+ New song</button><button class="btn" data-act="example">Load an example</button><button class="btn" data-act="import">Import a backup</button></div>' +
+    (isInstalled() ? '' : '<button class="btn" data-act="install">How to install Hot Takes</button>') + '</section>';
 }
 
 /* ---------- modal + toast ---------- */
@@ -706,6 +718,7 @@ function songsModal(){
     '<div class="row"><button class="btn" data-act="exportAll"' + (S.songs.length ? "" : " disabled") + '>Export all songs</button>' +
     (s ? '<button class="btn" data-act="exportSong">Export this song</button>' : '') +
     '<button class="btn" data-act="import">Import file</button><button class="btn" data-act="example">Load example</button></div>' +
+    '<h4>Share Hot Takes</h4><div class="row"><button class="btn" data-act="install">Install and share instructions</button></div>' +
     '<div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Close</button></div>');
 }
 function lyricsModal(secId){
@@ -1027,6 +1040,102 @@ document.addEventListener("keydown", function(e){
   if (hit) setBrush(hit);
   else if (e.key.toLowerCase() === "t") H.addTake();
 });
+
+/* ---------- install help ---------- */
+var deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", function(e){
+  e.preventDefault(); deferredPrompt = e;
+  var slot = document.getElementById("installNowSlot");
+  if (slot) slot.innerHTML = installNowBtn();
+});
+window.addEventListener("appinstalled", function(){ deferredPrompt = null; closeModal(); render(); toast("Hot Takes installed"); });
+function isInstalled(){
+  try { return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch(e) { return false; }
+}
+function device(){
+  var ua = navigator.userAgent || "";
+  var iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var android = /Android/.test(ua);
+  var edge = /Edg\/|EdgiOS|EdgA/.test(ua);
+  var firefox = /Firefox|FxiOS/.test(ua);
+  var chrome = !edge && /Chrome|CriOS/.test(ua);
+  var safari = !chrome && !edge && !firefox && /Safari/.test(ua);
+  return {iOS:iOS, android:android, mac:/Macintosh/.test(ua) && !iOS, edge:edge, firefox:firefox, chrome:chrome, safari:safari, ipad:iOS && !/iPhone|iPod/.test(ua)};
+}
+var ONCE = "Open Hot Takes once from its new icon while you're online. After that it works with no internet.";
+var GUIDES = {
+  ios:{title:"iPhone or iPad (Safari)", steps:[
+    "Open this link in <b>Safari</b>. Other browsers on iPhone and iPad may not offer the install option.",
+    "Tap the <b>Share</b> button (a square with an arrow). On newer iOS it can sit inside the <b>⋯</b> menu next to the address bar.",
+    "Scroll down, tap <b>Add to Home Screen</b>, then tap <b>Add</b>.", ONCE]},
+  android:{title:"Android (Chrome)", steps:[
+    "Open this link in <b>Chrome</b>.",
+    "Tap the <b>⋮</b> menu at the top right.",
+    "Tap <b>Install app</b> or <b>Add to Home screen</b>, then confirm.", ONCE]},
+  macsafari:{title:"Mac (Safari)", steps:[
+    "You need macOS Sonoma (14) or newer.",
+    "Open this link in <b>Safari</b>.",
+    "In the menu bar choose <b>File → Add to Dock</b>, then click <b>Add</b>.", ONCE]},
+  chromium:{title:"Mac or Windows (Chrome or Edge)", steps:[
+    "Open this link in <b>Chrome</b> or <b>Edge</b>.",
+    "Click the <b>install icon</b> at the right end of the address bar (a small monitor with a down arrow).",
+    "No icon? Open the <b>⋮</b> menu in Chrome or the <b>…</b> menu in Edge and choose <b>Install Hot Takes</b>. In Chrome it can be under <b>Cast, save and share</b>.", ONCE]},
+  firefox:{title:"Firefox", steps:[
+    "Firefox doesn't install web apps, so bookmark this link instead.",
+    "Open it once while you're online, and it keeps working offline in Firefox.",
+    "For a real app icon, open the link in Safari, Chrome or Edge."]}
+};
+function pickGuide(d){
+  if (d.iOS) return "ios";
+  if (d.android) return d.firefox ? "firefox" : "android";
+  if (d.firefox) return "firefox";
+  if (d.mac && d.safari) return "macsafari";
+  return "chromium";
+}
+function deviceLabel(d){
+  if (d.iOS) return d.ipad ? "iPad" : "iPhone";
+  if (d.android) return "Android";
+  var b = d.edge ? "Edge" : d.chrome ? "Chrome" : d.firefox ? "Firefox" : d.safari ? "Safari" : "this browser";
+  return (d.mac ? "Mac" : "Computer") + " · " + b;
+}
+function installNowBtn(){ return deferredPrompt ? '<button class="btn primary" data-act="promptInstall">Install now</button>' : ''; }
+function appLink(){ return EMBEDDED ? "" : location.origin + location.pathname; }
+function guideHTML(key){ return '<ol class="steps">' + GUIDES[key].steps.map(function(s){ return '<li>' + s + '</li>'; }).join("") + '</ol>'; }
+function installModal(){
+  var d = device(), key = pickGuide(d), link = appLink();
+  var html = '<h3>Install Hot Takes</h3>';
+  if (EMBEDDED) html += '<p class="callout">This is a preview inside Claude. To install, open your Hot Takes link (your GitHub Pages address) and use these steps there.</p>';
+  else if (isInstalled()) html += '<p class="callout">You\'re already using the installed app.</p>';
+  html += '<div class="row"><span class="devicetag">This device: ' + esc(deviceLabel(d)) + '</span></div>' +
+    '<span id="installNowSlot">' + installNowBtn() + '</span>';
+  if (d.iOS && !d.safari) html += '<p class="callout">You\'re not in Safari. Copy the link below, then open it in Safari to install.</p>';
+  html += '<h4>' + esc(GUIDES[key].title) + '</h4>' + guideHTML(key);
+  html += '<details class="others"><summary>Steps for other devices</summary>' +
+    Object.keys(GUIDES).filter(function(k){ return k !== key; }).map(function(k){
+      return '<div class="guide"><h4>' + esc(GUIDES[k].title) + '</h4>' + guideHTML(k) + '</div>';
+    }).join("") + '</details>';
+  html += '<h4>Send it to someone</h4><p class="note">Everyone who installs it gets their own copy, with their own songs saved on their own device. Sessions move between people with Songs → Export and Import.</p>';
+  if (link) {
+    html += '<div class="linkrow"><input id="appLink" readonly value="' + esc(link) + '" aria-label="Hot Takes link">' +
+      '<button class="btn" data-act="copyLink">Copy link</button>' +
+      (navigator.share ? '<button class="btn" data-act="shareLink">Share</button>' : '') + '</div>';
+  } else {
+    html += '<p class="note">Send them your GitHub Pages link.</p>';
+  }
+  html += '<div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closeModal">Done</button></div>';
+  modal(html);
+}
+H.install = function(){ installModal(); };
+H.promptInstall = function(){
+  if (!deferredPrompt) return;
+  var p = deferredPrompt; deferredPrompt = null;
+  p.prompt();
+  if (p.userChoice) p.userChoice.then(function(){ var slot = document.getElementById("installNowSlot"); if (slot) slot.innerHTML = ""; });
+};
+H.copyLink = function(){ copyText(appLink()); };
+H.shareLink = function(){
+  navigator.share({title:"Hot Takes", text:"Hot Takes: a take sheet for tracking sessions. Open the link, then add it to your home screen or dock.", url:appLink()}).catch(function(){});
+};
 
 /* ---------- boot ---------- */
 if (!song() && S.songs.length) { S.cur = S.songs[0].id; S.tab = "overview"; }
