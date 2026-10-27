@@ -73,7 +73,7 @@ button:disabled{cursor:default;opacity:.4}
 .songbtn:hover{background:var(--raised)}
 .songbtn small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
 .songbtn span{font-family:var(--display);font-size:24px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.right{display:flex;align-items:center;gap:8px}
+.right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .status{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
 
 .btn{min-height:44px;border:1px solid var(--line-strong);background:var(--panel);border-radius:8px;padding:0 14px;font-weight:500;white-space:nowrap;color:var(--ink)}
@@ -223,8 +223,24 @@ tfoot th,tfoot td{background:var(--raised)}
 .empty p{margin:0;max-width:52ch;color:var(--muted)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-.scrim{position:fixed;inset:0;background:rgba(10,12,15,.5);z-index:50;display:grid;place-items:center;padding:16px}
-.sheet{background:var(--panel);border-radius:14px;border:1px solid var(--line);width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.scrim{position:fixed;inset:0;background:rgba(10,12,15,.5);z-index:50;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);border-radius:14px;border:1px solid var(--line);width:min(640px,100%);margin:auto 0;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.25);flex:none}
+html.locked,html.locked body{overflow:hidden}
+@media (max-height:540px){
+  .bar{position:static}
+  .top{padding-block:8px 6px;flex-wrap:nowrap;gap:8px}
+  .brand b{display:none}
+  .songnav{flex:1 1 auto;min-width:0}
+  .songbtn span{font-size:19px}
+  .songbtn small{font-size:10px}
+  .status,.brush .lab,.brush kbd{display:none}
+  .brush{padding:3px}
+  .right{gap:6px}
+  .right .btn,.bkp,.iconbtn{min-height:40px;height:40px;padding-inline:10px;font-size:14px}
+  .iconbtn{width:40px;padding:0}
+  .sheet{padding:14px 16px;gap:10px}
+}
 .sheet h3{margin:0;font-family:var(--display);font-size:26px;font-weight:600}
 .sheet h4{margin:4px 0 0;font-family:var(--display);font-size:20px;font-weight:600}
 .songlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -695,8 +711,10 @@ function emptyState(){
 function modal(html){
   modalEl.innerHTML = '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true">' + html + '</div></div>';
   modalEl.hidden = false;
+  document.documentElement.classList.add("locked");
+  var sc = modalEl.querySelector(".scrim"); if (sc) sc.scrollTop = 0;
 }
-function closeModal(){ modalEl.hidden = true; modalEl.innerHTML = ""; }
+function closeModal(){ modalEl.hidden = true; modalEl.innerHTML = ""; document.documentElement.classList.remove("locked"); }
 function toast(t){
   toastEl.textContent = t; toastEl.hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(function(){ toastEl.hidden = true; }, 2600);
