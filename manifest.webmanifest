@@ -1,6 +1,6 @@
 {
-  "name": "Take Log",
-  "short_name": "Take Log",
+  "name": "Hot Takes",
+  "short_name": "Hot Takes",
   "description": "Mark takes by song, part and section while tracking.",
   "start_url": "./",
   "scope": "./",

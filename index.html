@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Take Log</title>
+<title>Hot Takes</title>
 <meta name="theme-color" content="#e9ecef" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14171b" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Take Log">
+<meta name="apple-mobile-web-app-title" content="Hot Takes">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" href="./icon-192.png">
 </head>
 <body>
 <!--APP-START-->
-<title>Take Log</title>
+<title>Hot Takes</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: a tracking-session take sheet. Song switcher on top, sticky part tabs + mark brushes, then a grid of song sections (rows) by takes (columns). */
@@ -146,6 +146,35 @@ tr.line .cell{height:52px}
 .bk{font-family:var(--mono);font-size:13px;font-weight:600;padding:3px 8px;border-radius:5px;background:var(--k-bg);color:var(--k);white-space:nowrap}
 .need{color:var(--b);font-size:13px;font-weight:600;white-space:nowrap}
 .muted{color:var(--muted);font-size:14px}
+tr.flash th,tr.flash td{background:var(--sel)!important}
+.bkp{min-height:44px;border-radius:999px;padding:0 14px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+.bkp::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--done)}
+.bkp.warn{background:var(--k-bg);border-color:var(--k-bg);color:var(--k);font-weight:600}
+.bkp.warn::before{background:var(--part)}
+.setup{display:flex;gap:10px;align-items:flex-start;padding:0 16px 12px}
+.setup label{padding-top:11px;flex:none}
+.setup textarea{min-height:44px;height:44px;resize:vertical;font-size:15px;line-height:1.4;padding:10px 12px}
+.needs{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.needpart{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;padding:12px 16px;border-bottom:1px solid var(--line-soft);align-items:start}
+.needpart:last-child{border-bottom:0}
+.needpart > b{display:flex;align-items:center;gap:8px;padding-top:9px;min-width:0}
+.needlist{display:flex;flex-wrap:wrap;gap:6px}
+.needbtn{min-height:40px;border:1px solid var(--line);background:var(--raised);border-radius:8px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;color:var(--ink);max-width:100%}
+.needbtn:hover{border-color:var(--ink)}
+.needbtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tagopen,.tagnew{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;flex:none}
+.tagopen{background:var(--k-bg);color:var(--k)} .tagnew{background:var(--sunk);color:var(--muted)}
+.alldone{padding:14px 16px;border-top:1px solid var(--line);color:var(--g);font-weight:600}
+.sheet.wide{width:min(820px,100%)}
+.comp{display:flex;flex-direction:column;gap:18px}
+.comppart h4{margin:0 0 2px}
+.comppart .su{font-size:13px;color:var(--muted);margin:0 0 6px;white-space:pre-wrap}
+.comprow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft);align-items:center}
+.comprow.ln{padding-left:18px}
+.comprow .lab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comprow .lab small{font-family:var(--mono);color:var(--muted);margin-right:6px}
+.comprow .val{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.goodlist{font-family:var(--mono);font-size:12px;color:var(--g);white-space:nowrap}
 tr.skip th,tr.skip td{background:var(--raised)}
 tr.skip .secname{color:var(--muted);text-decoration:line-through}
 .skipnote{color:var(--muted);font-size:14px;padding:0 14px}
@@ -206,6 +235,10 @@ textarea.dump{min-height:200px;font-family:var(--mono);font-size:12px}
   .brush .lab,.brush kbd{display:none}
   .brush{padding:3px}
   .status{display:none}
+  .needpart{grid-template-columns:1fr}
+  .needpart > b{padding-top:0}
+  .setup{flex-direction:column;gap:4px}
+  .setup label{padding-top:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
@@ -246,7 +279,7 @@ function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function plural(n, w){ return n + " " + w + (n === 1 ? "" : "s"); }
 
 /* ---------- data ---------- */
-function fresh(){ return {v:1, songs:[], cur:null, tab:"overview"}; }
+function fresh(){ return {v:1, songs:[], cur:null, tab:"overview", changed:0, lastExport:0}; }
 function cleanMap(o, test){ var r = {}; if (o && typeof o === "object") { for (var k in o) { if (Object.prototype.hasOwnProperty.call(o,k) && test(o[k])) r[k] = o[k]; } } return r; }
 function normPart(p){
   var splits = {};
@@ -257,7 +290,8 @@ function normPart(p){
   }
   return {
     id:String(p.id), name:String(p.name == null ? "Part" : p.name),
-    takes:Array.isArray(p.takes) ? p.takes.filter(function(t){ return t && t.id; }).map(function(t){ return {id:String(t.id), n:Number(t.n)||1, note:String(t.note == null ? "" : t.note)}; }) : [],
+    setup:String(p.setup == null ? "" : p.setup),
+    takes:Array.isArray(p.takes) ? p.takes.filter(function(t){ return t && t.id; }).map(function(t){ return {id:String(t.id), n:Number(t.n)||1, note:String(t.note == null ? "" : t.note), at:Number(t.at)||0}; }) : [],
     marks:cleanMap(p.marks, function(v){ return VALID[v] === 1; }),
     skip:cleanMap(p.skip, function(v){ return v === true; }),
     splits:splits
@@ -279,10 +313,10 @@ function load(){
     if (!raw) return null;
     var d = JSON.parse(raw);
     if (!d || !Array.isArray(d.songs)) return null;
-    return {v:1, songs:d.songs.map(normSong).filter(Boolean), cur:d.cur || null, tab:d.tab || "overview"};
+    return {v:1, songs:d.songs.map(normSong).filter(Boolean), cur:d.cur || null, tab:d.tab || "overview", changed:Number(d.changed) || 0, lastExport:Number(d.lastExport) || 0};
   } catch(e) { return null; }
 }
-function newPart(name){ return {id:uid("p"), name:name, takes:[{id:uid("t"), n:1, note:""}], marks:{}, skip:{}, splits:{}}; }
+function newPart(name){ return {id:uid("p"), name:name, setup:"", takes:[{id:uid("t"), n:1, note:"", at:Date.now()}], marks:{}, skip:{}, splits:{}}; }
 function newSong(){ return {id:uid("s"), name:"Untitled song", bpm:"", key:"", notes:"", created:Date.now(), sections:[], parts:DEFAULT_PARTS.map(newPart)}; }
 
 var S = load() || fresh();
@@ -311,12 +345,32 @@ window.addEventListener("pagehide", flush);
 document.addEventListener("visibilitychange", function(){ if (document.hidden) flush(); });
 
 function snap(){ undoStack.push(JSON.stringify(S)); if (undoStack.length > 80) undoStack.shift(); var u = document.getElementById("undoBtn"); if (u) u.disabled = false; }
+function touch(){ S.changed = Date.now(); }
 function undo(){
   if (!undoStack.length) return;
+  var keepExport = S.lastExport;
   try { S = JSON.parse(undoStack.pop()); } catch(e) { return; }
+  S.lastExport = keepExport; touch();
   menu = null; save(); render(); toast("Undone");
 }
-function act(fn){ snap(); fn(); save(); render(); }
+function act(fn){ snap(); fn(); touch(); save(); render(); }
+function ago(ts){
+  var m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return m + " min ago";
+  var h = Math.round(m / 60);
+  if (h < 24) return h + " hr ago";
+  var d = Math.round(h / 24);
+  return d === 1 ? "yesterday" : d + " days ago";
+}
+function backupChip(){
+  if (!S.songs.length) return "";
+  var warn = !S.lastExport || S.changed > S.lastExport;
+  var label = !S.lastExport ? "Not backed up" : (S.changed > S.lastExport ? "New changes · back up" : "Backed up " + ago(S.lastExport));
+  return '<button class="bkp' + (warn ? " warn" : "") + '" id="bkpChip" data-act="exportAll" title="Export all songs as a backup file">' + label + '</button>';
+}
+function refreshChip(){ var c = document.getElementById("bkpChip"); if (c) c.outerHTML = backupChip(); }
+function markExported(){ S.lastExport = Date.now(); if (S.changed > S.lastExport) S.changed = S.lastExport; save(); refreshChip(); }
 
 /* ---------- coverage ---------- */
 function rowsOf(s, p){
@@ -368,8 +422,8 @@ function header(s){
       '<button class="songbtn" data-act="songs" aria-label="Open song list"><small>Song ' + (i + 1) + ' of ' + S.songs.length + (s.bpm ? ' · ' + esc(s.bpm) + ' BPM' : '') + '</small><span id="songTitle">' + esc(s.name || "Untitled song") + '</span></button>' +
       '<button class="iconbtn" data-act="nextSong" aria-label="Next song"' + (i >= S.songs.length - 1 ? " disabled" : "") + '>' + CHEV_R + '</button>' +
     '</div>' : '';
-  return '<header class="top"><div class="brand"><span class="dot" aria-hidden="true"></span><b>Take Log</b></div>' + nav +
-    '<div class="right"><span class="status" id="status">' + esc(statusText) + '</span>' +
+  return '<header class="top"><div class="brand"><span class="dot" aria-hidden="true"></span><b>Hot Takes</b></div>' + nav +
+    '<div class="right"><span class="status" id="status">' + esc(statusText) + '</span>' + backupChip() +
     '<button class="btn" id="undoBtn" data-act="undo"' + (undoStack.length ? "" : " disabled") + '>Undo</button>' +
     '<button class="btn" data-act="songs">Songs</button></div></header>';
 }
@@ -421,7 +475,8 @@ function partView(s, p){
   var h = '<section class="panel"><div class="phead"><div class="ptitle"><input class="pname" id="pname" data-edit="partName" value="' + esc(p.name) + '" aria-label="Part name"><span class="meta">' + plural(p.takes.length, "take") + '</span></div>' +
     '<div class="pacts"><span class="pill ' + st.st + '">' + st.cov + ' / ' + st.total + ' covered</span>' +
     '<button class="btn" data-act="partMenu" aria-expanded="' + partMenu + '">Part options</button>' +
-    '<button class="btn primary" data-act="addTake">+ Take</button></div></div>';
+    '<button class="btn primary" data-act="addTake">+ Take</button></div></div>' +
+    '<div class="setup"><label class="lbl" for="psetup">Setup</label><textarea id="psetup" data-edit="partSetup" rows="1" placeholder="Instrument, mics, preamp settings, amp, pedals: whatever you\'d need to match it later">' + esc(p.setup) + '</textarea></div>';
   if (partMenu) {
     h += '<div class="actions"><button class="btn small" data-act="movePart" data-dir="-1"' + (idx === 0 ? " disabled" : "") + '>Move left</button>' +
       '<button class="btn small" data-act="movePart" data-dir="1"' + (idx === s.parts.length - 1 ? " disabled" : "") + '>Move right</button>' +
@@ -431,7 +486,7 @@ function partView(s, p){
 
   var head = '<tr><th class="sc hlabel" scope="col">Section</th>' +
     (p.takes.length ? p.takes.map(function(t){
-      return '<th class="tk" scope="col"><div class="tktop"><span class="tkn">T' + t.n + '</span><button class="x" data-act="delTake" data-id="' + t.id + '" data-arm="Del?" aria-label="Delete take ' + t.n + '">✕</button></div>' +
+      return '<th class="tk" scope="col"><div class="tktop"><span class="tkn"' + (t.at ? ' title="Added ' + esc(new Date(t.at).toLocaleString()) + '"' : '') + '>T' + t.n + '</span><button class="x" data-act="delTake" data-id="' + t.id + '" data-arm="Del?" aria-label="Delete take ' + t.n + '">✕</button></div>' +
         '<input class="tknote" data-edit="takeNote" data-id="' + t.id + '" value="' + esc(t.note) + '" placeholder="note" aria-label="Note for take ' + t.n + '"></th>';
     }).join("") : '<th class="tk hlabel">No takes</th>') +
     '<th class="bestc hlabel" scope="col">Best</th></tr>';
@@ -445,17 +500,17 @@ function partView(s, p){
     var mbtn = '<button class="x" data-act="rowMenu" data-id="' + sec.id + '" aria-expanded="' + !!open + '" aria-label="Options for ' + esc(sec.name) + '">⋯</button>';
     var name = '<input class="secname" data-edit="secName" data-id="' + sec.id + '" value="' + esc(sec.name) + '" aria-label="Section name">';
     if (skipped) {
-      body += '<tr class="skip"><th class="sc" scope="row"><div class="secc">' + name + mbtn + '</div></th><td colspan="' + (span - 1) + '"><div class="skipnote">Not in this part</div></td></tr>';
+      body += '<tr class="skip" data-rowid="' + sec.id + '"><th class="sc" scope="row"><div class="secc">' + name + mbtn + '</div></th><td colspan="' + (span - 1) + '"><div class="skipnote">Not in this part</div></td></tr>';
     } else if (L && L.length) {
       var c = L.filter(function(l){ return keepers(p, l.id).length > 0; }).length;
       var any = L.some(function(l){ return anyMark(p, l.id); });
-      body += '<tr class="head"><th class="sc" scope="row"><div class="secc">' + name + '<span class="ltag">' + L.length + ' lines</span>' + mbtn + '</div></th>' +
+      body += '<tr class="head" data-rowid="' + sec.id + '"><th class="sc" scope="row"><div class="secc">' + name + '<span class="ltag">' + L.length + ' lines</span>' + mbtn + '</div></th>' +
         '<td colspan="' + (span - 1) + '"><div style="padding:0 14px"><span class="pill ' + (c === L.length ? "done" : any ? "part" : "none") + '">' + c + ' / ' + L.length + ' lines covered</span></div></td></tr>';
       L.forEach(function(l, j){
-        body += '<tr class="line"><th class="sc" scope="row"><div class="linec"><span class="ln">' + (j + 1) + '</span><span class="ltext" title="' + esc(l.text) + '">' + esc(l.text) + '</span></div></th>' + cells(p, l.id) + bestCell(p, l.id) + '</tr>';
+        body += '<tr class="line" data-rowid="' + l.id + '"><th class="sc" scope="row"><div class="linec"><span class="ln">' + (j + 1) + '</span><span class="ltext" title="' + esc(l.text) + '">' + esc(l.text) + '</span></div></th>' + cells(p, l.id) + bestCell(p, l.id) + '</tr>';
       });
     } else {
-      body += '<tr><th class="sc" scope="row"><div class="secc">' + name + mbtn + '</div></th>' + cells(p, sec.id) + bestCell(p, sec.id) + '</tr>';
+      body += '<tr data-rowid="' + sec.id + '"><th class="sc" scope="row"><div class="secc">' + name + mbtn + '</div></th>' + cells(p, sec.id) + bestCell(p, sec.id) + '</tr>';
     }
     if (open) {
       var isSplit = L && L.length;
@@ -493,7 +548,8 @@ function overview(s){
     '<div class="field"><label for="sKey">Key</label><input id="sKey" data-edit="songKey" value="' + esc(s.key) + '" autocomplete="off"></div>' +
     '<div class="field wide"><label for="sNotes">Notes</label><input id="sNotes" data-edit="songNotes" value="' + esc(s.notes) + '" placeholder="Setup, players, anything to remember" autocomplete="off"></div>' +
     '</div></section>';
-  h += '<section class="panel"><div class="phead"><h2 class="h2">Coverage</h2><span class="meta">Tap a part to open it</span></div>';
+  h += '<section class="panel"><div class="phead"><h2 class="h2">Coverage</h2><div class="pacts"><span class="meta">Tap a part to open it</span>' +
+    (s.sections.length ? '<button class="btn" data-act="comp">Comp sheet</button>' : '') + '</div></div>';
   if (!s.sections.length) {
     h += '<div class="emptyrow" style="border-top:1px solid var(--line)">Start with the song\'s form. Every part shares these sections.</div>' + addSecBlock(s) + '</section>';
     return h;
@@ -509,8 +565,112 @@ function overview(s){
     }).join("") +
     '</tbody></table></div>' +
     '<div class="legend"><span><span class="ovcell done">T3</span> keeper take</span><span><span class="ovcell done">2/4</span> lines with a keeper</span><span><span class="ovcell part">open</span> marked, no keeper yet</span><span><span class="ovcell skip">—</span> not in this part</span></div>' +
-    '</section>';
+    '</section>' + neededPanel(s);
   return h;
+}
+
+/* rows a part still needs a keeper for, with a readable label */
+function rowItems(s, p){
+  var out = [];
+  s.sections.forEach(function(sec){
+    if (p.skip[sec.id]) return;
+    var L = p.splits[sec.id];
+    if (L && L.length) L.forEach(function(l, j){ out.push({id:l.id, sec:sec.name, line:j + 1, text:l.text, label:(sec.name || "Section") + " · L" + (j + 1)}); });
+    else out.push({id:sec.id, sec:sec.name, line:0, text:"", label:sec.name || "Section"});
+  });
+  return out;
+}
+function neededPanel(s){
+  if (!s.sections.length) return "";
+  var notStarted = [], blocks = [];
+  s.parts.forEach(function(p){
+    var items = rowItems(s, p);
+    if (!items.length) return;
+    var any = items.some(function(r){ return anyMark(p, r.id); });
+    if (!any) { notStarted.push(p); return; }
+    var missing = items.filter(function(r){ return !keepers(p, r.id).length; });
+    if (!missing.length) return;
+    blocks.push('<div class="needpart"><b><span class="sd part" aria-hidden="true"></span>' + esc(p.name || "Untitled part") + '</b><div class="needlist">' +
+      missing.map(function(r){
+        var open = anyMark(p, r.id);
+        return '<button class="needbtn" data-act="goRow" data-part="' + p.id + '" data-row="' + r.id + '" title="' + esc(r.text || r.label) + '"><span>' + esc(r.label) + '</span><span class="' + (open ? "tagopen" : "tagnew") + '">' + (open ? "open" : "not tracked") + '</span></button>';
+      }).join("") + '</div></div>');
+  });
+  if (notStarted.length) {
+    blocks.push('<div class="needpart"><b><span class="sd none" aria-hidden="true"></span>Not started</b><div class="needlist">' +
+      notStarted.map(function(p){ return '<button class="needbtn" data-act="tab" data-id="' + p.id + '"><span>' + esc(p.name || "Untitled part") + '</span></button>'; }).join("") + '</div></div>');
+  }
+  return '<section class="panel"><div class="phead"><h2 class="h2">Still needed</h2><span class="meta">Rows without a keeper. Tap one to jump to it.</span></div>' +
+    (blocks.length ? '<div class="needs">' + blocks.join("") + '</div>' : '<div class="alldone">Every part has a keeper for every section.</div>') + '</section>';
+}
+
+/* comp sheet */
+function compData(s){
+  return s.parts.map(function(p){
+    var rows = [];
+    s.sections.forEach(function(sec){
+      if (p.skip[sec.id]) return;
+      var L = p.splits[sec.id];
+      if (L && L.length) {
+        rows.push({head:true, label:sec.name || "Section"});
+        L.forEach(function(l, j){ rows.push({line:j + 1, label:l.text || ("Line " + (j + 1)), id:l.id}); });
+      } else rows.push({label:sec.name || "Section", id:sec.id});
+    });
+    rows.forEach(function(r){
+      if (r.head) return;
+      r.keep = keepers(p, r.id).map(function(t){ return "T" + t.n; });
+      r.good = p.takes.filter(function(t){ return p.marks[r.id + "|" + t.id] === "g"; }).map(function(t){ return "T" + t.n; });
+    });
+    var started = rows.some(function(r){ return !r.head && (r.keep.length || anyMark(p, r.id)); });
+    return {name:p.name || "Untitled part", setup:p.setup, rows:rows, started:started};
+  });
+}
+function compText(s){
+  var lines = [s.name || "Untitled song"];
+  var meta = [s.bpm ? s.bpm + " BPM" : "", s.key ? "Key " + s.key : ""].filter(Boolean).join(" · ");
+  if (meta) lines.push(meta);
+  compData(s).forEach(function(p){
+    if (!p.started) return;
+    lines.push("", p.name.toUpperCase());
+    if (p.setup.trim()) lines.push("Setup: " + p.setup.trim().replace(/\s*\n\s*/g, " / "));
+    p.rows.forEach(function(r){
+      if (r.head) { lines.push(r.label + ":"); return; }
+      var v = r.keep.length ? r.keep.join(", ") : ("no keeper" + (r.good.length ? " (good: " + r.good.join(", ") + ")" : ""));
+      lines.push((r.line ? "   " + r.line + ". " : "") + r.label + " - " + v);
+    });
+  });
+  return lines.join("\n");
+}
+function compModal(){
+  var s = song(); if (!s) return;
+  var parts = compData(s).filter(function(p){ return p.started; });
+  var body = parts.length ? parts.map(function(p){
+    return '<div class="comppart"><h4>' + esc(p.name) + '</h4>' + (p.setup.trim() ? '<p class="su">' + esc(p.setup.trim()) + '</p>' : '') +
+      p.rows.map(function(r){
+        if (r.head) return '<div class="comprow"><div class="lab"><b>' + esc(r.label) + '</b></div><div class="val"></div></div>';
+        var val = r.keep.length ? r.keep.map(function(k){ return '<span class="bk">' + k + ' ★</span>'; }).join("")
+          : '<span class="need">No keeper</span>' + (r.good.length ? '<span class="goodlist">✓ ' + r.good.join(", ") + '</span>' : '');
+        return '<div class="comprow' + (r.line ? " ln" : "") + '"><div class="lab">' + (r.line ? '<small>' + r.line + '</small>' : '') + esc(r.label) + '</div><div class="val">' + val + '</div></div>';
+      }).join("") + '</div>';
+  }).join("") : '<p class="note">Nothing marked yet. Parts show up here once they have marks.</p>';
+  var canShare = !EMBEDDED && !!navigator.share;
+  modal('<h3>Comp sheet · ' + esc(s.name || "Untitled song") + '</h3>' +
+    '<p class="note">Keeper takes for every part, in song order. Rows without a keeper list any takes marked Good. Parts with no marks are left out.</p>' +
+    '<div class="comp">' + body + '</div>' +
+    '<div class="row" style="justify-content:flex-end">' + (canShare ? '<button class="btn" data-act="shareComp">Share as text</button>' : '') +
+    '<button class="btn" data-act="copyComp">Copy text</button><button class="btn primary" data-act="closeModal">Done</button></div>');
+  var sh = modalEl.querySelector(".sheet"); if (sh) sh.classList.add("wide");
+}
+function copyText(text){
+  try {
+    navigator.clipboard.writeText(text).then(function(){ toast("Copied"); }, function(){ fallbackCopy(text); });
+  } catch(e) { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  var ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", "");
+  ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+  var ok = false; try { ok = document.execCommand("copy"); } catch(e) {}
+  ta.remove(); toast(ok ? "Copied" : "Couldn't copy on this device");
 }
 
 function emptyState(){
@@ -575,19 +735,20 @@ function exportData(songs, filename){
   try { file = new File([json], filename, {type:"application/json"}); } catch(e) { file = null; }
   if (file && navigator.canShare && navigator.share) {
     var ok = false; try { ok = navigator.canShare({files:[file]}); } catch(e) { ok = false; }
-    if (ok) { navigator.share({files:[file], title:filename}).catch(function(){}); return; }
+    if (ok) { navigator.share({files:[file], title:filename}).then(markExported, function(){}); return; }
   }
   var blob = new Blob([json], {type:"application/json"});
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  markExported();
   toast("Exported " + filename);
 }
 function importText(text){
   var d;
-  try { d = JSON.parse(text); } catch(e) { toast("That file isn't a Take Log backup."); return; }
-  if (!d || d.app !== "take-log" || !Array.isArray(d.songs)) { toast("That file isn't a Take Log backup."); return; }
+  try { d = JSON.parse(text); } catch(e) { toast("That file isn't a Hot Takes backup."); return; }
+  if (!d || d.app !== "take-log" || !Array.isArray(d.songs)) { toast("That file isn't a Hot Takes backup."); return; }
   var incoming = d.songs.map(normSong).filter(Boolean);
   if (!incoming.length) { toast("No songs found in that file."); return; }
   act(function(){
@@ -622,6 +783,8 @@ function exampleSong(){
   var drums = s.parts[0], bass = s.parts[1], gtr = s.parts[2], piano = s.parts[3], vox = s.parts[4];
   fill(drums, ["gk..","bgk.","gkg.","bgk.","g.k.","bgkg","rbgk","gk.."]);
   drums.takes[2].note = "locked in";
+  drums.setup = "Kick in + out, snare top, OH pair, room mono. Snare tuned low, dampened.";
+  vox.setup = "Dynamic mic, pop filter, preamp gain at noon.";
   fill(bass, ["gk.","gk.","bg.","g.k","rgk","bg.","...","..."]);
   gtr.name = "Fuzz Guitar";
   fill(gtr, ["..","..","..","gk","..","bk","..","g."]);
@@ -712,14 +875,28 @@ var H = {
     });
     songsModal();
   },
-  exportAll: function(){ exportData(S.songs, "take-log-" + stamp() + ".json"); },
-  exportSong: function(){ var s = song(); if (s) exportData([s], "take-log-" + slug(s.name) + "-" + stamp() + ".json"); },
+  exportAll: function(){ exportData(S.songs, "hot-takes-" + stamp() + ".json"); },
+  exportSong: function(){ var s = song(); if (s) exportData([s], "hot-takes-" + slug(s.name) + "-" + stamp() + ".json"); },
   import: function(){ fileEl.click(); },
   copyDump: function(){
     var box = document.getElementById("dumpBox"); if (!box) return;
-    var done = function(){ toast("Copied"); };
-    try { navigator.clipboard.writeText(box.value).then(done, function(){ box.focus(); box.select(); }); }
-    catch(e) { box.focus(); box.select(); }
+    copyText(box.value); markExported();
+  },
+  comp: function(){ compModal(); },
+  copyComp: function(){ var s = song(); if (s) copyText(compText(s)); },
+  shareComp: function(){
+    var s = song(); if (!s) return;
+    navigator.share({title:"Comp sheet: " + (s.name || "Untitled song"), text:compText(s)}).catch(function(){});
+  },
+  goRow: function(b){
+    var pid = b.getAttribute("data-part"), rid = b.getAttribute("data-row");
+    S.tab = pid; menu = null; addOpen = false; save(); render();
+    var tr = document.querySelector('tr[data-rowid="' + rid + '"]');
+    if (tr) {
+      tr.scrollIntoView({block:"center"});
+      tr.classList.add("flash");
+      setTimeout(function(){ if (tr.isConnected) tr.classList.remove("flash"); }, 1800);
+    }
   },
   tab: function(b, id){ S.tab = id; menu = null; addOpen = false; save(); render(); },
   addPart: function(){
@@ -754,7 +931,7 @@ var H = {
     act(function(){
       var p = part();
       var n = p.takes.reduce(function(m, t){ return Math.max(m, t.n); }, 0) + 1;
-      p.takes.push({id:uid("t"), n:n, note:""});
+      p.takes.push({id:uid("t"), n:n, note:"", at:Date.now()});
     });
     var gw = document.querySelector(".gridwrap"); if (gw) gw.scrollLeft = gw.scrollWidth;
   },
@@ -827,12 +1004,14 @@ document.addEventListener("input", function(e){
   if (!k) return;
   var s = song(); if (!s) return;
   if (!editSnapped) { snap(); editSnapped = true; }
+  touch();
   var v = el.value, id = el.getAttribute("data-id");
   if (k === "songName") { s.name = v; var t = document.getElementById("songTitle"); if (t) t.textContent = v || "Untitled song"; }
   else if (k === "songBpm") s.bpm = v;
   else if (k === "songKey") s.key = v;
   else if (k === "songNotes") s.notes = v;
   else if (k === "partName") { var p = part(); if (p) { p.name = v; var tl = document.querySelector('.tab[aria-selected="true"] .tl'); if (tl) tl.textContent = v || "Untitled part"; } }
+  else if (k === "partSetup") { var ps = part(); if (ps) ps.setup = v; }
   else if (k === "secName") { s.sections.forEach(function(x){ if (x.id === id) x.name = v; }); }
   else if (k === "takeNote") { var pp = part(); if (pp) pp.takes.forEach(function(t){ if (t.id === id) t.note = v; }); }
   save();
